@@ -24,7 +24,6 @@ import {
 } from '../../interfaces';
 import { ObjectConfiguration } from '../../base/configuration';
 import { Autowire } from './autowire';
-import { NotFoundError } from '../../utils/errorFactory';
 
 /**
  * 所有解析器基类
@@ -128,12 +127,12 @@ class RefResolver extends BaseManagedResolver {
 
   resolve(managed: IManagedInstance): any {
     const mr = managed as ManagedReference;
-    return this._factory.context.get(mr.name);
+    return this._factory.context.get(mr.name, null, false);
   }
 
   async resolveAsync(managed: IManagedInstance): Promise<any> {
     const mr = managed as ManagedReference;
-    return this._factory.context.getAsync(mr.name);
+    return this._factory.context.getAsync(mr.name, null, false);
   }
 }
 
@@ -297,6 +296,7 @@ export class ManagedResolverFactory {
   beforeCreateHandler = [];
 
   constructor(context: IApplicationContext) {
+    console.log('new ManagedResolverFactory');
     this.context = context;
 
     // 初始化解析器
@@ -392,15 +392,7 @@ export class ManagedResolverFactory {
       const keys = definition.properties.keys();
       for (const key of keys) {
         const identifier = definition.properties.getProperty(key);
-        try {
-          inst[ key ] = this.resolveManaged(identifier);
-        } catch (error) {
-          if (NotFoundError.isClosePrototypeOf(error)) {
-            const className = definition.path.name;
-            error.updateErrorMsg(className);
-          }
-          throw error;
-        }
+        inst[key] = this.resolveManaged(identifier);
       }
     }
 
@@ -472,15 +464,7 @@ export class ManagedResolverFactory {
       const keys = definition.properties.keys();
       for (const key of keys) {
         const identifier = definition.properties.getProperty(key);
-        try {
-          inst[ key ] = await this.resolveManagedAsync(identifier);
-        } catch (error) {
-          if (NotFoundError.isClosePrototypeOf(error)) {
-            const className = definition.path.name;
-            error.updateErrorMsg(className);
-          }
-          throw error;
-        }
+        inst[key] = await this.resolveManagedAsync(identifier);
       }
     }
 

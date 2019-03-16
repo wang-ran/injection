@@ -165,7 +165,6 @@ export class BaseApplicationContext extends EventEmitter implements IApplication
   }
 
   get<T>(identifier: ObjectIdentifier, args?: any): T {
-    // 因为在这里拿不到类名, NotFoundError 类的错误信息在 ManagedResolverFactory.ts createAsync 方法中增加错误类名
 
     if (this.registry.hasObject(identifier)) {
       return this.registry.getObject(identifier);
@@ -190,7 +189,6 @@ export class BaseApplicationContext extends EventEmitter implements IApplication
   }
 
   async getAsync<T>(identifier: ObjectIdentifier, args?: any): Promise<T> {
-    // 因为在这里拿不到类名, NotFoundError 类的错误信息在 ManagedResolverFactory.ts createAsync 方法中增加错误类名
 
     if (this.registry.hasObject(identifier)) {
       return this.registry.getObject(identifier);
@@ -278,6 +276,7 @@ export class BaseApplicationContext extends EventEmitter implements IApplication
   }
 
   protected createObjectDependencyTree(identifier, definition) {
+    console.log(1111);
     if (!this.dependencyMap.has(identifier)) {
 
       let constructorArgs = definition.constructorArgs || [];
@@ -286,11 +285,12 @@ export class BaseApplicationContext extends EventEmitter implements IApplication
       }).filter(name => {
         return !!name;
       });
+      console.log('constructorArgs', constructorArgs);
 
       const properties = (definition.properties && definition.properties.keys().map((key) => {
         return definition.properties.get(key).name;
       })) || [];
-
+      console.log('properties', properties);
       this.dependencyMap.set(identifier, {
         name: typeof definition.path !== 'string' ? definition.path.name : identifier,
         scope: definition.scope,

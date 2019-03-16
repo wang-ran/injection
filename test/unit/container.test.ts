@@ -120,13 +120,13 @@ describe('/test/unit/container.test.ts', () => {
     const container = new Container();
     container.bind<Grandson>('grandson', <any>Grandson);
 
-    expect(function () { container.get('grandson'); }).to.throw(Error, /Grandson/);
+    expect(function () { container.get('grandson'); }).to.throw(Error, /katana3 is not valid in grandson context/);
     expect(function () { container.get('nograndson'); }).to.throw(Error, /nograndson/);
 
     try {
       await container.getAsync('grandson');
     } catch (error) {
-      expect(function () { throw error; }).to.throw(Error, /Grandson/);
+      expect(function () { throw error; }).to.throw(Error, /katana3 is not valid in grandson context/);
     }
     try {
       await container.getAsync('nograndson');
@@ -158,14 +158,14 @@ describe('/test/unit/container.test.ts', () => {
     expect(ins1 instanceof Katana).to.be.true;
     expect(() => {
       container.get(Katana);
-    }).to.throw(/is not valid in current context/);
+    }).to.throw(/is not valid in context/);
 
     container.bind<SubChild>('subChild', <any>SubChild);
     container.bind<SubParent>('subParent', <any>SubParent);
     try {
       await container.getAsync('subParent');
     } catch (error) {
-      expect(function () { throw error; }).to.throw(/is not valid in current context/);
+      expect(function () { throw error; }).to.throw(/subAny is not valid in subParent --> subChild context/);
     }
   });
 

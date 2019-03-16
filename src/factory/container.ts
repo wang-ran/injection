@@ -6,14 +6,17 @@ import { FunctionDefinition } from '../base/functionDefinition';
 import { XmlApplicationContext } from './xml/xmlApplicationContext';
 import { recursiveGetMetadata } from '../utils/reflectTool';
 import { Autowire } from './common/autowire';
+import { ErrorChain, isStackOverflowExeption, isNotFoundExeption } from '../utils/errorFactory';
 
 const uuidv1 = require('uuid/v1');
 const is = require('is-type-of');
 const camelcase = require('camelcase');
 const debug = require('debug')(`injection:Container:${process.pid}`);
+const errorChain = Symbol.for('#errorChain');
 
 export class Container extends XmlApplicationContext implements IContainer {
   id: string = uuidv1();
+  [errorChain]: ErrorChain = new ErrorChain();
 
   init(): void {
     super.init();
@@ -146,21 +149,55 @@ export class Container extends XmlApplicationContext implements IContainer {
     const tempContainer = new Container();
     tempContainer.bind<T>(target);
     tempContainer.parent = this;
-    return tempContainer.get<T>(target);
+    return tempContainer.get<T>(target, null);
   }
 
-  get<T>(identifier: any, args?: any): T {
+  get<T>(identifier: any, args: any = null, first = true): T {
     if (typeof identifier !== 'string') {
       identifier = this.getIdentifier(identifier);
     }
-    return super.get(identifier, args);
+    try {
+      return super.get(identifier, args);
+    } catch (err) {
+      this.errorChain.add(err, identifier);
+      if (first) {
+        if (isStackOverflowExeption(err)) {
+          // 循环引用造成 'Maximum call stack size exceeded' 处理
+          this.errorChain.stackOverflowHandle(err, () => this.errorChain.clear(err));
+        } else if (isNotFoundExeption(err)) {
+          // 在当前 container 中未找到 inject 对象
+          this.errorChain.notFoundHandle(err, () => this.errorChain.clear(err));
+        }
+        return err;
+      }
+      throw err;
+    }
   }
 
-  async getAsync<T>(identifier: any, args?: any): Promise<T> {
+  async getAsync<T>(identifier: any, args: any = null, first = true): Promise<T> {
     if (typeof identifier !== 'string') {
       identifier = this.getIdentifier(identifier);
     }
-    return super.getAsync<T>(identifier, args);
+    try {
+      return await super.getAsync<T>(identifier, args);
+    } catch (err) {
+      this.errorChain.add(err, identifier);
+      if (first) {
+        if (isStackOverflowExeption(err)) {
+          // 循环引用造成 'Maximum call stack size exceeded' 处理
+          this.errorChain.stackOverflowHandle(err, () => this.errorChain.clear(err));
+        } else if (isNotFoundExeption(err)) {
+          // 在当前 container 中未找到 inject 对象
+          this.errorChain.notFoundHandle(err, () => this.errorChain.clear(err));
+        }
+        return;
+      }
+      throw err;
+    }
+  }
+
+  protected get errorChain(): ErrorChain {
+    return this[errorChain];
   }
 
   protected getIdentifier(target: any) {

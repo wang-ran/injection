@@ -18,6 +18,25 @@ class Tracer {
 
 }
 
+@provide()
+class CircularA {
+  @inject('circularB')
+  circularB;
+}
+
+@provide()
+class CircularB {
+  @inject('circularC')
+  circularC;
+}
+
+@provide()
+class CircularC {
+  @inject('circularA')
+  circularA;
+}
+
+
 class DataCollector {
 
   id = Math.random();
@@ -36,6 +55,9 @@ class ChildTracer extends Tracer {
   @inject('dataCollector')
   collector: DataCollector;
 
+  @inject('circularA')
+  circularA: CircularA;
+
   get parentId() {
     return '123';
   }
@@ -52,15 +74,20 @@ class ChildTracer extends Tracer {
 
 describe('/test/unit/requestContainer.test.ts', () => {
 
-  it('should create request container more then once and get same value from parent', async () => {
+  it.only('should create request container more then once and get same value from parent', async () => {
     const appCtx = new Container();
     appCtx.bind(DataCollector);
     appCtx.bind(ChildTracer);
+    appCtx.bind(CircularA);
+    appCtx.bind(CircularB);
+    appCtx.bind(CircularC);
 
     const reqCtx1 = new RequestContainer({}, appCtx);
     const reqCtx2 = new RequestContainer({}, appCtx);
     expect(<Tracer>reqCtx1.get(ChildTracer).parentId).to.equal(<Tracer>reqCtx2.get(ChildTracer).parentId);
     expect((await reqCtx1.getAsync(ChildTracer)).parentId).to.equal((await reqCtx2.getAsync(ChildTracer)).parentId);
+
+
   });
 
   it('should get same object in same request context', async () => {

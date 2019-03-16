@@ -23,7 +23,7 @@ export class RequestContainer extends Container {
     const definition = this.applicationContext.registry.getDefinition(identifier);
     if (definition && definition.isRequestScope()) {
       // create object from applicationContext definition for requestScope
-      return this.resolverFactory.create(definition, args);
+      return this.get(definition, args);
     }
 
     if (this.parent) {

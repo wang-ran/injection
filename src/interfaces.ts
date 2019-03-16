@@ -27,8 +27,8 @@ export interface IMessageSource {
 export interface IObjectFactory {
   registry: IObjectDefinitionRegistry;
   isAsync(identifier: ObjectIdentifier): boolean;
-  get<T>(identifier: ObjectIdentifier, args?: any): T;
-  getAsync<T>(identifier: ObjectIdentifier, args?: any): Promise<T>;
+  get<T>(identifier: ObjectIdentifier, args?: any, first?: boolean): T;
+  getAsync<T>(identifier: ObjectIdentifier, args?: any, first?: boolean): Promise<T>;
 }
 /**
  * 对象描述定义
@@ -194,4 +194,9 @@ export interface ObjectDependencyTree {
   name: string;
   constructorArgs: string[];
   properties: string[];
+}
+
+export interface IErrorChainItem {
+  identifier: string;
+  error: Error;
 }
